@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Task Manager</title>
+    <script src="https://unpkg.com/vue@3"></script>
+    <style>
+      :root {
+        --bg: #f4f6fb;
+        --card: #ffffff;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --primary: #1d4ed8;
+        --danger: #dc2626;
+        --border: #e5e7eb;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);
+        color: var(--text);
+      }
+
+      .container {
+        max-width: 680px;
+        margin: 40px auto;
+        padding: 0 16px;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 20px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      }
+
+      h1 {
+        margin: 0 0 16px;
+        font-size: 1.5rem;
+      }
+
+      .input-row {
+        display: flex;
+        gap: 10px;
+      }
+
+      input[type='text'] {
+        flex: 1;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        font-size: 0.95rem;
+      }
+
+      button {
+        border: none;
+        border-radius: 10px;
+        padding: 10px 14px;
+        cursor: pointer;
+      }
+
+      .btn-primary {
+        background: var(--primary);
+        color: #fff;
+      }
+
+      ul {
+        list-style: none;
+        margin: 16px 0 0;
+        padding: 0;
+        display: grid;
+        gap: 10px;
+      }
+
+      li {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 12px;
+      }
+
+      .task-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .task-done {
+        text-decoration: line-through;
+        color: var(--muted);
+      }
+
+      .btn-danger {
+        background: #fee2e2;
+        color: var(--danger);
+      }
+
+      .empty {
+        margin-top: 14px;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      @media (max-width: 520px) {
+        .input-row {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app" class="container">
+      <div class="card">
+        <h1>Task Manager</h1>
+
+        <div class="input-row">
+          <input
+            type="text"
+            v-model="newTask"
+            placeholder="Tambah task baru"
+            @keyup.enter="addTask"
+          />
+          <button class="btn-primary" @click="addTask">Tambah</button>
+        </div>
+
+        <ul v-if="tasks.length">
+          <li v-for="task in tasks" :key="task.id">
+            <div class="task-left">
+              <input
+                type="checkbox"
+                :checked="task.done"
+                @change="toggleTask(task.id)"
+              />
+              <span :class="{ 'task-done': task.done }">{{ task.title }}</span>
+            </div>
+            <button class="btn-danger" @click="deleteTask(task.id)">Hapus</button>
+          </li>
+        </ul>
+
+        <p v-else class="empty">Belum ada task.</p>
+      </div>
+    </div>
+
+    <script>
+      const { createApp } = Vue;
+
+      createApp({
+        data() {
+          return {
+            tasks: [],
+            newTask: ''
+          };
+        },
+        methods: {
+          async fetchTasks() {
+            const res = await fetch('http://localhost:3000/tasks');
+            this.tasks = await res.json();
+          },
+          async addTask() {
+            if (!this.newTask.trim()) return;
+
+            await fetch('http://localhost:3000/tasks', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ title: this.newTask })
+            });
+
+            this.newTask = '';
+            await this.fetchTasks();
+          },
+          async deleteTask(id) {
+            await fetch(`http://localhost:3000/tasks/${id}`, {
+              method: 'DELETE'
+            });
+            await this.fetchTasks();
+          },
+          async toggleTask(id) {
+            await fetch(`http://localhost:3000/tasks/${id}`, {
+              method: 'PUT'
+            });
+            await this.fetchTasks();
+          }
+        },
+        mounted() {
+          this.fetchTasks();
+        }
+      }).mount('#app');
+    </script>
+  </body>
+</html>
